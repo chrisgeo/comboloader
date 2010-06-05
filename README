@@ -1,1 +1,29 @@
-Eventually I'll fill this in
+ComboLoader
+    WSGI App that is used in combination with another service/server that will allow the combining of any javascript or CSS files into a single, minimized (if not already), file and cache it.
+    
+    Example INI:
+    
+    [server:main]
+    use = egg:Paste#http
+    host = 0.0.0.0
+    port = 80
+    
+    [composite:main]
+    use = egg:Paste#urlmap
+    / = YOURAPP
+    /combo  = loader
+    
+    [app:loader]
+    use = egg:comboloader
+    config_file = %(here)s/LOCATION_TO/CONFIG.json
+    beaker.session.data_dir = %(here)s/data/sdata
+    beaker.session.lock_dir = %(here)s/data/slock
+    beaker.session.key = comboloader
+    beaker.session.secret = somesecret
+    beaker.session.type = cookie
+    beaker.session.validate_key = STRONG_KEY_HERE
+    beaker.session.cookie_domain = .yourdomain.com
+    
+    [app:YOURAPP]
+    use = egg:YOURAPP
+    full_stack = true
