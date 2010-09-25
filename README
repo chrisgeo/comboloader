@@ -15,7 +15,13 @@ ComboLoader
     
     [app:loader]
     use = egg:comboloader
-    config_file = %(here)s/LOCATION_TO/CONFIG.json
+    base_js_dir = %(here)s/../howler/python/howler/howler/public/js
+    base_css_dir = %(here)s/css/
+    base_img_dir = %(here)s/img/
+    config_file = %(here)s/config/combo.json
+    use_config = False
+
+    #session config
     beaker.session.data_dir = %(here)s/data/sdata
     beaker.session.lock_dir = %(here)s/data/slock
     beaker.session.key = comboloader
