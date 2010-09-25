@@ -14,17 +14,23 @@ import sys
 import webob
 import webob.exc as exc
 import json
-
+import re
+from comboloader.utils import HttpRequest, FileRequest
 from beaker.middleware import SessionMiddleware
+from paste.deploy.converters import asbool
+from webob import Response
+import logging
+
+log = logging.getLogger(__name__)
 
 REQUEST_TYPES = {
-    'server': utils.HttpRequest,
-    'file': utils.FileRequest
+    'server': HttpRequest,
+    'file': FileRequest
 }
 
-required_config_keys = ['base', 'request_type', 'js_path', 'css_path']
+required_config_keys = ['base', 'request_type', 'js_path', 'css_path', 'combo_base']
 
-def parse_config_file(config_file):
+def parse_json_confing(config_file):
     """Parse JSON for config 
     
     JSON will can look like this:
@@ -38,51 +44,92 @@ def parse_config_file(config_file):
         "filter": DEBUG|MIN
     }
     
-    """
+    Otherwise uses the *.ini file to load the server config
+    """ 
     f = open(config_file, 'r')
     content = f.read()
     f.close()
+    
     config = json.loads(content)
     
     
     #parse through options to load files by file name
-    if not required_config_keys in config.keys():
-        raise Exception("Required keys are missing in config :: required are: %s ::: config has: %s" 
-                                % (required_keys, config.keys()))
+    missing_keys = []
+    for key in required_config_keys:
+        if key not in config.keys():
+            missing_keys.append(key)
+    if len(missing_keys) > 0: 
+        raise Exception("Required keys are missing in config :: required are: %s ::: config is missing: %s" 
+                                % (required_config_keys, missing_keys))
     
     config['request_type'] = REQUEST_TYPES[config['request_type'].lower()]
-            
+    
     return config
 
-class ComboLoader(object):
-    """ComboLoader Object
+def parse_ini_config(config):
     
-    Creates a combo loader object 
-    """
+    new_config = {}
     
-    def __init__(self, config_file):
-        self.config = parse_config_file(config_file)
-        
-    def __call__(self, request):
-        pass
-        
-class ComboLoaderApp(object):
+    new_config['request_type'] = REQUEST_TYPES['file']
+    new_config['js_path'] = config['base_js_dir']
+    new_config['css_path'] = config['base_css_dir']
+    new_config['img_path'] = config['base_img_dir']
+    new_config['filter'] = config.get('filter', 'min')
+    
+    return new_config
+    
+def parse_config_file(config):
 
-    def __init__(self, config_file):
-        self.config = json.loads(config)
-    
+    if asbool(config['use_config']):
+        new_config = parse_json_file(config['config_file'])
+    else:
+        new_config = parse_ini_config(config)
+         
+    return new_config
+
+class ComboLoaderApp(object):
+    """ComboLoader WSGI App
+        
+        Retrieves files from a filesystem or HTTP Request and concatenates them
+        into one file request
+    """
+    def __init__(self, config):
+        self.config = parse_config_file(config)
+        self.js_regex = re.compile('^.+?\.js$', re.IGNORECASE)
+        self.css_regex = re.compile('^.+?\.css$', re.IGNORECASE)
+        
     def __call__(self, environ, start_response):
         req = webob.Request(environ)
         req.session = environ['beaker.session']
         
-        schema = req.scheme #get schema for base url to support https if we must
+        self.js_regex = re.compile('^.+?\.js$', re.IGNORECASE)
+        self.css_regex = re.compile('^.+?\.css$', re.IGNORECASE)
+        
         #get files and munge together
         #command line arguments
-        params = dict([part.split('=') for part in req.query_string.split('&')])
-        
-        
+        if not req.query_string:
+            return exc.HTTPBadRequest("Cannot have empty parameter list")(environ, start_response)
+        else:
+            files = dict(js=list(), css=list())
     
-def make_app(global_conf, config_file, **app_conf):
+            #probably a more elegant way to do this.
+            for param in req.query_string.split('&'):
+                if(self.js_regex.match(param)):
+                    files['js'].append(param)
+                elif(self.css_regex.match(param)):
+                    files['css'].append(param)
+            
+            resp = self.config['request_type'](request=req, config=self.config, files=files)
+            
+            return Response(status=200, body=resp.combine())(environ, start_response)
+
+def make_app(config):
+        """Construct WSGI App from JSON file"""
+        app = ComboLoaderApp(config)
+        app = SessionMiddleware(app, config)
+        return app
+         
+def make_loader_app(global_conf, **app_conf):
     """Construct a complete WSGI app ready to serve by Paste
     
     Example INI file:
@@ -109,13 +156,15 @@ def make_app(global_conf, config_file, **app_conf):
         beaker.session.type = cookie
         beaker.session.validate_key = STRONG_KEY_HERE
         beaker.session.cookie_domain = .yourdomain.com
-
+        base_js_dir = %(here)s/js/
+        base_css_dir = %(here)/css/
+        use_config = False
         [app:YOURAPP]
         use = egg:YOURAPP
         full_stack = true
         static_files = true
     """
     
-    app = ComboLoaderApp(config_file)
-    app = SessionMiddleware(app, app_conf)
+    app = ComboLoaderApp(app_conf)
+    app = SessionMiddleware(app, app_conf)  
     return app

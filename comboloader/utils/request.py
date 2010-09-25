@@ -1,26 +1,52 @@
 import httplib2
 import json
+from webob import Response
+import logging
+import pprint
 
 
-class HttpRequest(object);
+log = logging.getLogger(__name__)
+pp = pprint.PrettyPrinter()
+
+class RequestLoader(object):
+    """ComboLoader Object
     
-    def __init__(self, base, path):
-        pass
+    Creates a combo loader object 
+    """
+    def __call__(self, *args, **kwargs):
+        return self._combine()
+        
+class HttpRequest(RequestLoader):
+    pass
 
-
-class FileRequest(object):
+class FileRequest(RequestLoader):
     """FileRequest loads files with a base and path
     
     Concatenates the files given in a list
     
     """
-    def __init__(self, base, path, file_list):
-        self.file_path = base + path
-        self.files = file_list
-        
-    def _combine(self):
+    def __init__(self, request, config, files):
+        self.files = files
+        self.config = config
+        self.request = request
+                
+    def combine(self):
         content = ""
-        for k in self.files:
-            f = open("%s/%s" % (self.file_path, k))
-            content += f.read()
-            f.close()
+ 
+        for ft, items in self.files.items():
+            for item in items:
+                try:
+                    log.debug("File Type: %s :::: File Path: %s" % (ft, item))
+                    f = open("%s/%s" % (self._get_file_path(ft), item), 'r')
+                    content += f.read()
+                    f.close()
+                except IOError as e:
+                    log.error("File not found: %s ::: Continuing..." % e)
+        
+        return content
+
+    def _get_file_path(self, file_type):
+        if file_type.lower() == 'js':
+            return self.config['js_path']
+        elif file_type.lower() == 'css':
+            return self.config['css_path']
