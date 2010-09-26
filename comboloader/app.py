@@ -87,6 +87,13 @@ def parse_config_file(config):
          
     return new_config
 
+def get_content_type(files):
+
+    if files.has_key('js'):
+        return 'application/javascript'
+    elif files.has_key('css'):
+        return 'text/css'
+
 class ComboLoaderApp(object):
     """ComboLoader WSGI App
         
@@ -121,7 +128,10 @@ class ComboLoaderApp(object):
             
             resp = self.config['request_type'](request=req, config=self.config, files=files)
             
-            return Response(status=200, body=resp.combine())(environ, start_response)
+            return Response(status=200, 
+                                    body=resp.combine(), 
+                                    content_type=get_content_type(files)
+                                    )(environ, start_response)
 
 def make_app(config):
         """Construct WSGI App from JSON file"""
@@ -164,7 +174,6 @@ def make_loader_app(global_conf, **app_conf):
         full_stack = true
         static_files = true
     """
-    
     app = ComboLoaderApp(app_conf)
     app = SessionMiddleware(app, app_conf)  
     return app
