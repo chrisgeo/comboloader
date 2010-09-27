@@ -88,7 +88,6 @@ def parse_config_file(config):
     return new_config
 
 def get_content_type(files):
-    log.debug(files)
     if files.has_key('js'):
         return 'application/javascript'
     elif files.has_key('css'):
