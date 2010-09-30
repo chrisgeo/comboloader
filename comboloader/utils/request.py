@@ -36,7 +36,7 @@ class FileRequest(RequestLoader):
     def combine(self):
         content = ""
  
-        for ft, items in self.files.items():
+        for ft, items in self.files.iteritems():
             for item in items:
                 try:
                     log.debug("File Type: %s :::: File Path: %s" % (ft, item))
