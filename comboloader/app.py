@@ -28,7 +28,7 @@ REQUEST_TYPES = {
     'file': FileRequest
 }
 
-required_config_keys = ['base', 'request_type', 'js_path', 'css_path', 'combo_base']
+required_config_keys = ('base', 'request_type', 'js_path', 'css_path', 'combo_base')
 
 
 def parse_json_confing(config_file):
