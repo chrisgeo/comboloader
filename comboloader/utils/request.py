@@ -14,7 +14,10 @@ class RequestLoader(object):
     Creates a combo loader object 
     """
     def __call__(self, *args, **kwargs):
-        return self._combine()
+        return self.combine()
+
+    def combine(self):
+        return ""
         
 class HttpRequest(RequestLoader):
     pass
