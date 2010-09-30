@@ -14,7 +14,6 @@ import sys
 import webob
 import webob.exc as exc
 import json
-import re
 from comboloader.utils import HttpRequest, FileRequest
 from beaker.middleware import SessionMiddleware
 from paste.deploy.converters import asbool
@@ -108,8 +107,6 @@ class ComboLoaderApp(object):
     """
     def __init__(self, config):
         self.config = parse_config_file(config)
-        self.js_regex = re.compile('^.+?\.js$', re.IGNORECASE)
-        self.css_regex = re.compile('^.+?\.css$', re.IGNORECASE)
         
     def __call__(self, environ, start_response):
         req = webob.Request(environ)
@@ -120,17 +117,13 @@ class ComboLoaderApp(object):
         if not req.query_string:
             return exc.HTTPBadRequest("Cannot have empty parameter list")(environ, start_response)
 
-        files = {}
+        files = {'js': [],
+                 'css': []}
 
-        #probably a more elegant way to do this.
         for param in req.query_string.split('&'):
-            if self.js_regex.match(param):
-                if 'js' not in files:
-                    files['js'] = []
+            if param[-3:] == '.js':
                 files['js'].append(param)
-            elif self.css_regex.match(param):
-                if 'css' not in files:
-                    files['css'] = []
+            elif param[-3:] == '.css':
                 files['css'].append(param)
         
         resp = self.config['request_type'](request=req, config=self.config, files=files)

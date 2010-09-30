@@ -3,6 +3,7 @@ import json
 from webob import Response
 import logging
 import pprint
+import os.path
 
 
 log = logging.getLogger(__name__)
@@ -36,11 +37,14 @@ class FileRequest(RequestLoader):
     def combine(self):
         content = ""
  
-        for ft, items in self.files.iteritems():
-            for item in items:
+        for file_type, file_paths in self.files.iteritems():
+            for path in file_paths:
+                # TODO: Path resolving could benefit memoization
+                path = os.path.join(self._get_file_path(file_type), path)
+                path = os.path.abspath(path)
+                log.debug("File Type: %s :::: File Path: %s" % (file_type, path))
                 try:
-                    log.debug("File Type: %s :::: File Path: %s" % (ft, item))
-                    f = open("%s/%s" % (self._get_file_path(ft), item), 'r')
+                    f = open(path, 'r')
                     content += f.read()
                     f.close()
                 except IOError as e:
