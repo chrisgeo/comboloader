@@ -108,9 +108,6 @@ class ComboLoaderApp(object):
         req = webob.Request(environ)
         req.session = environ['beaker.session']
         
-        self.js_regex = re.compile('^.+?\.js$', re.IGNORECASE)
-        self.css_regex = re.compile('^.+?\.css$', re.IGNORECASE)
-        
         #get files and munge together
         #command line arguments
         if not req.query_string:
