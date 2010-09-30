@@ -30,6 +30,7 @@ REQUEST_TYPES = {
 
 required_config_keys = ['base', 'request_type', 'js_path', 'css_path', 'combo_base']
 
+
 def parse_json_confing(config_file):
     """Parse JSON for config 
     
@@ -45,6 +46,7 @@ def parse_json_confing(config_file):
     }
     
     Otherwise uses the *.ini file to load the server config
+
     """ 
     f = open(config_file, 'r')
     content = f.read()
@@ -66,6 +68,7 @@ def parse_json_confing(config_file):
     
     return config
 
+
 def parse_ini_config(config):
     
     new_config = {}
@@ -78,6 +81,7 @@ def parse_ini_config(config):
     
     return new_config
     
+
 def parse_config_file(config):
 
     if asbool(config['use_config']):
@@ -87,17 +91,20 @@ def parse_config_file(config):
          
     return new_config
 
+
 def get_content_type(files):
     if files.has_key('js'):
         return 'application/javascript'
     elif files.has_key('css'):
         return 'text/css'
 
+
 class ComboLoaderApp(object):
     """ComboLoader WSGI App
         
         Retrieves files from a filesystem or HTTP Request and concatenates them
         into one file request
+
     """
     def __init__(self, config):
         self.config = parse_config_file(config)
@@ -129,9 +136,10 @@ class ComboLoaderApp(object):
         resp = self.config['request_type'](request=req, config=self.config, files=files)
         
         return Response(status=200, 
-                                body=resp.combine(), 
-                                content_type=get_content_type(files)
-                                )(environ, start_response)
+                        body=resp.combine(), 
+                        content_type=get_content_type(files)
+                        )(environ, start_response)
+
 
 def make_app(config):
         """Construct WSGI App from JSON file"""
@@ -139,6 +147,7 @@ def make_app(config):
         app = SessionMiddleware(app, config)
         return app
          
+
 def make_loader_app(global_conf, **app_conf):
     """Construct a complete WSGI app ready to serve by Paste
     
@@ -173,6 +182,7 @@ def make_loader_app(global_conf, **app_conf):
         use = egg:YOURAPP
         full_stack = true
         static_files = true
+
     """
     app = ComboLoaderApp(app_conf)
     app = SessionMiddleware(app, app_conf)  
