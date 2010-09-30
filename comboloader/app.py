@@ -176,7 +176,7 @@ def make_loader_app(global_conf, **app_conf):
         beaker.session.validate_key = STRONG_KEY_HERE
         beaker.session.cookie_domain = .yourdomain.com
         base_js_dir = %(here)s/js/
-        base_css_dir = %(here)/css/
+        base_css_dir = %(here)s/css/
         use_config = False
         [app:YOURAPP]
         use = egg:YOURAPP
