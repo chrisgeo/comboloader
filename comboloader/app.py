@@ -112,26 +112,26 @@ class ComboLoaderApp(object):
         #command line arguments
         if not req.query_string:
             return exc.HTTPBadRequest("Cannot have empty parameter list")(environ, start_response)
-        else:
-            files = {}
-    
-            #probably a more elegant way to do this.
-            for param in req.query_string.split('&'):
-                if(self.js_regex.match(param)):
-                    if not files.has_key('js'):
-                        files['js'] = list()
-                    files['js'].append(param)
-                elif(self.css_regex.match(param)):
-                    if not files.has_key('css'):
-                        files['css'] = list()
-                    files['css'].append(param)
-            
-            resp = self.config['request_type'](request=req, config=self.config, files=files)
-            
-            return Response(status=200, 
-                                    body=resp.combine(), 
-                                    content_type=get_content_type(files)
-                                    )(environ, start_response)
+
+        files = {}
+
+        #probably a more elegant way to do this.
+        for param in req.query_string.split('&'):
+            if(self.js_regex.match(param)):
+                if not files.has_key('js'):
+                    files['js'] = list()
+                files['js'].append(param)
+            elif(self.css_regex.match(param)):
+                if not files.has_key('css'):
+                    files['css'] = list()
+                files['css'].append(param)
+        
+        resp = self.config['request_type'](request=req, config=self.config, files=files)
+        
+        return Response(status=200, 
+                                body=resp.combine(), 
+                                content_type=get_content_type(files)
+                                )(environ, start_response)
 
 def make_app(config):
         """Construct WSGI App from JSON file"""
