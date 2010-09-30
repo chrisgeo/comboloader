@@ -58,11 +58,11 @@ def parse_json_confing(config_file):
     #parse through options to load files by file name
     missing_keys = []
     for key in required_config_keys:
-        if key not in config.keys():
+        if key not in config:
             missing_keys.append(key)
-    if len(missing_keys) > 0: 
+    if missing_keys:
         raise Exception("Required keys are missing in config :: required are: %s ::: config is missing: %s" 
-                                % (required_config_keys, missing_keys))
+                        % (required_config_keys, missing_keys))
     
     config['request_type'] = REQUEST_TYPES[config['request_type'].lower()]
     
@@ -93,9 +93,9 @@ def parse_config_file(config):
 
 
 def get_content_type(files):
-    if files.has_key('js'):
+    if 'js' in files:
         return 'application/javascript'
-    elif files.has_key('css'):
+    elif 'css' in files:
         return 'text/css'
 
 
@@ -124,13 +124,13 @@ class ComboLoaderApp(object):
 
         #probably a more elegant way to do this.
         for param in req.query_string.split('&'):
-            if(self.js_regex.match(param)):
-                if not files.has_key('js'):
-                    files['js'] = list()
+            if self.js_regex.match(param):
+                if 'js' not in files:
+                    files['js'] = []
                 files['js'].append(param)
-            elif(self.css_regex.match(param)):
-                if not files.has_key('css'):
-                    files['css'] = list()
+            elif self.css_regex.match(param):
+                if 'css' not in files:
+                    files['css'] = []
                 files['css'].append(param)
         
         resp = self.config['request_type'](request=req, config=self.config, files=files)
