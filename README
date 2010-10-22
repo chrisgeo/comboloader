@@ -17,7 +17,6 @@ ComboLoader
     use = egg:comboloader
     base_js_dir = %(here)s/../howler/python/howler/howler/public/js
     base_css_dir = %(here)s/css/
-    base_img_dir = %(here)s/img/
     config_file = %(here)s/config/combo.json
     use_config = False
 
