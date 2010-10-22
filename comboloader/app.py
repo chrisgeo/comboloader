@@ -92,9 +92,9 @@ def parse_config_file(config):
 
 
 def get_content_type(files):
-    if 'js' in files:
+    if 'js' in files and files.get('js') is not None:
         return 'application/javascript'
-    elif 'css' in files:
+    elif 'css' in files and files.get('css') is not None:
         return 'text/css'
 
 
@@ -117,20 +117,24 @@ class ComboLoaderApp(object):
         if not req.query_string:
             return exc.HTTPBadRequest("Cannot have empty parameter list")(environ, start_response)
 
-        files = {'js': [],
-                 'css': []}
+        files = {}
 
         for param in req.query_string.split('&'):
-            if param[-3:] == '.js':
+            log.debug("param is %s", param)
+            if param.endswith('.js'):
+                if not files.get('js') and not isinstance(files.get('js'), list):  
+                    files['js'] = list()
                 files['js'].append(param)
-            elif param[-3:] == '.css':
+            elif param.endswith('.css'):
+                if not files.get('css') and not isinstance(files.get('css'), list):  
+                    files['css'] = list()
                 files['css'].append(param)
         
         resp = self.config['request_type'](request=req, config=self.config, files=files)
-        
+
         return Response(status=200, 
                         body=resp.combine(), 
-                        content_type=get_content_type(files)
+                        content_type=get_content_type(files),
                         )(environ, start_response)
 
 
