@@ -29,6 +29,11 @@ REQUEST_TYPES = {
 
 required_config_keys = ('base', 'request_type', 'js_path', 'css_path', 'combo_base')
 
+def parse_yaml_config(config_file):
+  """
+    Parse YAML file for configuration options 
+  """
+  pass
 
 def parse_json_confing(config_file):
     """Parse JSON for config 
@@ -77,7 +82,8 @@ def parse_ini_config(config):
     new_config['css_path'] = config['base_css_dir']
     new_config['img_path'] = config['base_img_dir']
     new_config['filter'] = config.get('filter', 'min')
-    
+    new_config['separator'] = config.get('separator', '&')
+
     return new_config
     
 
@@ -97,6 +103,12 @@ def get_content_type(files):
     elif 'css' in files and files.get('css') is not None:
         return 'text/css'
 
+#TODO: Support some kind of meta data config
+# in the YAML/INI file so that comboloader
+# becomes more useful for libraries like YUI
+
+#TODO: problem with comboloaders, can only handle one
+# type of request at a time. What to remove?
 
 class ComboLoaderApp(object):
     """ComboLoader WSGI App
@@ -118,8 +130,9 @@ class ComboLoaderApp(object):
             return exc.HTTPBadRequest("Cannot have empty parameter list")(environ, start_response)
 
         files = {}
+        separator = self.config['separator']
 
-        for param in req.query_string.split('&'):
+        for param in req.query_string.split(separator):
             log.debug("param is %s", param)
             if param.endswith('.js'):
                 if not files.get('js') and not isinstance(files.get('js'), list):  

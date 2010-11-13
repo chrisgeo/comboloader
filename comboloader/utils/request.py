@@ -38,9 +38,12 @@ class FileRequest(RequestLoader):
         content = ""
  
         for file_type, file_paths in self.files.iteritems():
-            for path in file_paths:
+          base_path = self._get_file_path(file_type)
+          for path in file_paths:
                 # TODO: Path resolving could benefit memoization
-                path = os.path.join(self._get_file_path(file_type), path)
+                # problem with above; not ALL files are in the same
+                # subdirectories. We can have a base_path though.
+                path = os.path.join(base_path, path)
                 path = os.path.abspath(path)
                 log.debug("File Type: %s :::: File Path: %s" % (file_type, path))
                 try:
