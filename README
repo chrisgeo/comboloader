@@ -1,3 +1,10 @@
+TODO:
+* automatically replace url() with either:
+  - data uri
+  - provided base url for a CDN, etc
+
+##### Example config
+
 ComboLoader
     WSGI App that is used in combination with another service/server that will allow the combining of any javascript or CSS files into a single, minimized (if not already), file and cache it.
     
