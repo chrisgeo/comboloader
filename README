@@ -1,7 +1,18 @@
-TODO:
-* automatically replace url() with either:
-  - data uri
-  - provided base url for a CDN, etc
+ComboLoader
+  WSGI based app that takes a request and concatenates the given files into a single file, and returns it as a single request.
+
+WHAT CAN IT DO?
+---------------
+  * Replace url() tags with:
+    - data uris
+
+WHAT I WANT IT TO DO
+--------------------
+  * Ability to use a dependency graph for a file
+  * automatically replace url() with either:
+      - provided base url for a CDN, etc
+
+For any other requests please submit a bug in github. https://github.com/chrisgeo/comboloader/issues
 
 ##### Example config
 
@@ -24,18 +35,16 @@ ComboLoader
     use = egg:comboloader
     base_js_dir = %(here)s/../howler/python/howler/howler/public/js
     base_css_dir = %(here)s/css/
-    config_file = %(here)s/config/combo.json
     use_config = False
 
-    #session config
-    beaker.session.data_dir = %(here)s/data/sdata
-    beaker.session.lock_dir = %(here)s/data/slock
-    beaker.session.key = comboloader
-    beaker.session.secret = somesecret
-    beaker.session.type = cookie
-    beaker.session.validate_key = STRONG_KEY_HERE
-    beaker.session.cookie_domain = .yourdomain.com
-    
     [app:YOURAPP]
     use = egg:YOURAPP
     full_stack = true
+
+
+COMMON ISSUES
+--------------
+
+python-magic
+  This is required for automatically finding the mime-type of a file without depending on extensions, etc. As such, it requires libmagic to be installed. A known issue with python-magic on darwin (OS X) systems is that it depends on MacPorts. This will hopefully be fixed soon.
+
