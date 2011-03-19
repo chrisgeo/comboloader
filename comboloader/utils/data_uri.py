@@ -8,9 +8,14 @@
 
 """
 from base64 import b64encode
+from string import Template
+import warnings
+import magic
 
 class DataURI(object):
-  template = 'data:{mime};charset={encoding};base64,{data}'
+  template = Template('data:${mime};charset=${encoding};base64,${data}')
+  mime = magic.Magic(mime=True)
+  encoding = 'utf-8'
 
   def _get_and_encode_content(self, file):
     fopen = open(file, 'r')
@@ -28,4 +33,9 @@ class DataURI(object):
     if not encoded_content:
       raise Exception("No content in file::%s", file)
     #figure out type of file from extention, python-magic
+    mime_type = self.mime.from_file(file)
 
+    return self.template.substitute(
+            mime=mime_type, 
+            encoding=self.encoding,
+            data=encoded_content)

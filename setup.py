@@ -17,7 +17,9 @@ setup(name='comboloader',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          "WebOb>=0.9.8", "nose>=0.11", "httplib2>=0.5.0","PasteScript>=1.7","Beaker>=1.5.4","Routes>=1.12.3"
+          "WebOb>=0.9.8", "nose>=0.11",
+          "httplib2>=0.5.0","PasteScript>=1.7","Beaker>=1.5.4","Routes>=1.12.3",
+          "python-magic>=0.4"
       ],
       entry_points="""
       [paste.app_factory]
