@@ -29,34 +29,22 @@ class FileRequest(RequestLoader):
     Concatenates the files given in a list
     
     """
-    def __init__(self, request, config, files):
+    def __init__(self, request, base, files):
         self.files = files
-        self.config = config
+        self.base = base
         self.request = request
                 
     def combine(self):
         content = ""
  
-        for file_type, file_paths in self.files.iteritems():
-          base_path = self._get_file_path(file_type)
-          for path in file_paths:
-                # TODO: Path resolving could benefit memoization
-                # problem with above; not ALL files are in the same
-                # subdirectories. We can have a base_path though.
-                path = os.path.join(base_path, path)
-                path = os.path.abspath(path)
-                log.debug("File Type: %s :::: File Path: %s" % (file_type, path))
-                try:
-                    f = open(path, 'r')
-                    content += f.read()
-                    f.close()
-                except IOError as e:
-                    log.error("File not found: %s ::: Continuing..." % e)
+        for file in self.files:
+            path = os.path.abspath(os.path.join(self.base, file))
+            log.debug("File Type: %s :::: File Path: %s" % (file_type, path))
+            try:
+                f = open(path, 'r')
+                content += f.read()
+                f.close()
+            except IOError as e:
+                log.error("File not found: %s ::: Continuing..." % e)
         
         return content
-
-    def _get_file_path(self, file_type):
-        if file_type.lower() == 'js':
-            return self.config['js_path']
-        elif file_type.lower() == 'css':
-            return self.config['css_path']

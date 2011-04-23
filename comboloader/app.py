@@ -27,7 +27,7 @@ REQUEST_TYPES = {
     'file': FileRequest
 }
 
-required_config_keys = ('base', 'request_type', 'js_path', 'css_path', 'combo_base')
+required_config_keys = ('base')
 
 def parse_yaml_config(config_file):
   """
@@ -78,12 +78,9 @@ def parse_ini_config(config):
     new_config = {}
     
     new_config['request_type'] = REQUEST_TYPES['file']
-    new_config['js_path'] = config['base_js_dir']
-    new_config['css_path'] = config['base_css_dir']
-    new_config['img_path'] = config['base_img_dir']
     new_config['filter'] = config.get('filter', 'min')
     new_config['separator'] = config.get('separator', '&')
-
+    new_config['base_path'] = config['base_path']
     return new_config
     
 
@@ -97,19 +94,6 @@ def parse_config_file(config):
     return new_config
 
 
-def get_content_type(files):
-    if 'js' in files and files.get('js') is not None:
-        return 'application/javascript'
-    elif 'css' in files and files.get('css') is not None:
-        return 'text/css'
-
-#TODO: Support some kind of meta data config
-# in the YAML/INI file so that comboloader
-# becomes more useful for libraries like YUI
-
-#TODO: problem with comboloaders, can only handle one
-# type of request at a time. What to remove?
-
 class ComboLoaderApp(object):
     """ComboLoader WSGI App
         
@@ -119,44 +103,38 @@ class ComboLoaderApp(object):
     """
     def __init__(self, config):
         self.config = parse_config_file(config)
-        
+    
     def __call__(self, environ, start_response):
         req = webob.Request(environ)
-        req.session = environ['beaker.session']
         
-        #get files and munge together
-        #command line arguments
         if not req.query_string:
             return exc.HTTPBadRequest("Cannot have empty parameter list")(environ, start_response)
 
-        files = {}
         separator = self.config['separator']
+        content_type = 'text/plain' #default content-type
 
-        for param in req.query_string.split(separator):
-            log.debug("param is %s", param)
-            if param.endswith('.js'):
-                if not files.get('js') and not isinstance(files.get('js'), list):  
-                    files['js'] = list()
-                files['js'].append(param)
-            elif param.endswith('.css'):
-                if not files.get('css') and not isinstance(files.get('css'), list):  
-                    files['css'] = list()
-                files['css'].append(param)
-        
-        resp = self.config['request_type'](request=req, config=self.config, files=files)
+        files = req.query_string.split(separator)
+        if files:
+            if files[0].endswith('.js')
+               content_type = 'text/javascript'
+            elif files[0].endswith('.css'):
+                content_type = 'text/css'
 
-        return Response(status=200, 
-                        body=resp.combine(), 
-                        content_type=get_content_type(files),
-                        )(environ, start_response)
+            resp = self.config['request_type'](request=req,
+                    config=self.config, files=files)
 
+            return Response(status=200, 
+                            body=resp.combine(), 
+                            content_type=content_type,
+                            )(environ, start_response)
+        else:
+            return exc.HTTPBadRequest("404 Not Found")(environ, start_response)
 
 def make_app(config):
         """Construct WSGI App from JSON file"""
         app = ComboLoaderApp(config)
         app = SessionMiddleware(app, config)
         return app
-         
 
 def make_loader_app(global_conf, **app_conf):
     """Construct a complete WSGI app ready to serve by Paste
@@ -195,5 +173,5 @@ def make_loader_app(global_conf, **app_conf):
 
     """
     app = ComboLoaderApp(app_conf)
-    app = SessionMiddleware(app, app_conf)  
+    app = SessionMiddleware(app, app_conf)
     return app
