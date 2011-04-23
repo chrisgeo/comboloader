@@ -1,5 +1,14 @@
 ComboLoader
+============
   WSGI based app that takes a request and concatenates the given files into a single file, and returns it as a single request.
+
+  REQUIREMENTS
+  =============
+  * Paste>=1.7
+  * PasteScript>=1.7
+  * WebOb>=0.9.8
+  * httplib2>=0.50
+  * python-magic>=0.4
 
 WHAT CAN IT DO?
 ---------------
