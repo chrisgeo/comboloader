@@ -27,16 +27,12 @@ WHAT I WANT IT TO DO/IDEA MAPPING
     - Preloader?
   * Track most used files, create a combined/combo/rollup?
     - Log files used so we can put some analytics
-    - Log requests and urls + referrersa
+    - Log requests and urls + referrers
 
 For any other requests please submit a bug in github. https://github.com/chrisgeo/comboloader/issues
 
-##### Example config
-
-ComboLoader
-    WSGI App that is used in combination with another service/server that will allow the combining of any javascript or CSS files into a single, minimized (if not already), file and cache it.
-    
-    Example INI:
+# Example config
+```ini
     
     [server:main]
     use = egg:Paste#http
@@ -55,7 +51,7 @@ ComboLoader
     [app:YOURAPP]
     use = egg:YOURAPP
     full_stack = true
-
+```
 
 COMMON ISSUES
 --------------
