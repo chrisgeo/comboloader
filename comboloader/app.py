@@ -15,11 +15,12 @@ import webob
 import webob.exc as exc
 import json
 from comboloader.utils import HttpRequest, FileRequest
+from comboloader.utils.common import create_hash, store_cached_value, \
+    get_mime_type
 from beaker.middleware import SessionMiddleware
 from paste.deploy.converters import asbool
 from webob import Response
 import logging
-
 log = logging.getLogger(__name__)
 
 REQUEST_TYPES = {
@@ -27,50 +28,22 @@ REQUEST_TYPES = {
     'file': FileRequest
 }
 
-required_config_keys = ('base')
 
+
+REQUIRED_CONFIG_KEYS = ('base')
+
+CACHED_FILES = {} #cache files
+
+#################
+#
+# Config Parsers
+#
+#################
 def parse_yaml_config(config_file):
   """
     Parse YAML file for configuration options 
   """
   pass
-
-def parse_json_confing(config_file):
-    """Parse JSON for config 
-    
-    JSON will can look like this:
-    
-    {
-        "request_type": "server",
-        "comboBase": "www.cdn.com"
-        "base": "/base/path", //build directory
-        "js_path": "js", //path relative to base
-        "css_path": "path/to/css", //path relative to base; note: combo loader will try and search/replace images in CSS files
-        "filter": DEBUG|MIN
-    }
-    
-    Otherwise uses the *.ini file to load the server config
-
-    """ 
-    f = open(config_file, 'r')
-    content = f.read()
-    f.close()
-    
-    config = json.loads(content)
-    
-    
-    #parse through options to load files by file name
-    missing_keys = []
-    for key in required_config_keys:
-        if key not in config:
-            missing_keys.append(key)
-    if missing_keys:
-        raise Exception("Required keys are missing in config :: required are: %s ::: config is missing: %s" 
-                        % (required_config_keys, missing_keys))
-    
-    config['request_type'] = REQUEST_TYPES[config['request_type'].lower()]
-    
-    return config
 
 
 def parse_ini_config(config):
@@ -81,16 +54,14 @@ def parse_ini_config(config):
     new_config['filter'] = config.get('filter', 'min')
     new_config['separator'] = config.get('separator', '&')
     new_config['base_path'] = config['base_path']
+    new_config['locale_cache'] = asbool(config.get('locale_cache', 'false'))
     return new_config
     
 
 def parse_config_file(config):
 
-    if asbool(config['use_config']):
-        new_config = parse_json_file(config['config_file'])
-    else:
-        new_config = parse_ini_config(config)
-         
+    new_config = parse_ini_config(config)
+    
     return new_config
 
 
@@ -106,30 +77,35 @@ class ComboLoaderApp(object):
     
     def __call__(self, environ, start_response):
         req = webob.Request(environ)
+        file_hash = None
         
         if not req.query_string:
             return exc.HTTPBadRequest("Cannot have empty parameter list")(environ, start_response)
+        
+        file_hash = _create_hash(req.query_string)
+        mime_type = None
+        content = None
 
-        separator = self.config['separator']
-        content_type = 'text/plain' #default content-type
-
-        files = req.query_string.split(separator)
-        if files:
-            if files[0].endswith('.js')
-               content_type = 'text/javascript'
-            elif files[0].endswith('.css'):
-                content_type = 'text/css'
-
-            resp = self.config['request_type'](request=req,
-                    config=self.config, files=files)
-
-            return Response(status=200, 
-                            body=resp.combine(), 
-                            content_type=content_type,
-                            )(environ, start_response)
+        if config['local_cache'] and file_hash in CACHED_FILES:
+          mime_type = CACHED_FILES[file_hash]['mime_type']
+          content = CACHED_FILES[file_hash]['content']
         else:
-            return exc.HTTPBadRequest("404 Not Found")(environ, start_response)
+          separator = self.config['separator']
+          mime_type = 'text/plain' #default content-type
 
+          files = req.query_string.split(separator)
+          if files:
+              mime_type = get_mime_type(files[0])
+              resp = self.config['request_type'](request=req,
+                      config=self.config, files=files)
+              content = resp.combine()
+          else:
+              return exc.HTTPBadRequest("404 Not Found")(environ, start_response)
+
+          return Response(status=200, 
+                          body=served_files[file_hash]['content'],
+                          content_type=files[file_hash]['mimetype'],
+                          )(environ, start_response)
 def make_app(config):
         """Construct WSGI App from JSON file"""
         app = ComboLoaderApp(config)
@@ -163,9 +139,8 @@ def make_loader_app(global_conf, **app_conf):
         beaker.session.type = cookie
         beaker.session.validate_key = STRONG_KEY_HERE
         beaker.session.cookie_domain = .yourdomain.com
-        base_js_dir = %(here)s/js/
-        base_css_dir = %(here)s/css/
-        use_config = False
+        base = %(here)s/build/
+        separator = ;
         [app:YOURAPP]
         use = egg:YOURAPP
         full_stack = true
